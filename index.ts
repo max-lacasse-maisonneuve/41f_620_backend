@@ -1,5 +1,5 @@
-const http = require("http");
-const dotenv = require("dotenv");
+import http from 'http';
+import dotenv from "dotenv";
 dotenv.config();
 
 const serveur = http.createServer((req, res) => {
