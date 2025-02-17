@@ -98,7 +98,7 @@ const donneesTest = [
     },
     {
         titre: "Star Wars: Épisode IV - Un nouvel espoir",
-        genres: ["Action", "Aventure", "Fantaisie"],
+        genres: [],
         description: "Luke Skywalker se joint à la Rébellion pour sauver la princesse Leia des griffes de Dark Vador.",
         annee: "1977",
         realisation: "George Lucas",

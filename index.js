@@ -4,6 +4,16 @@ const dotenv = require("dotenv");
 const path = require("path");
 const db = require("./config/db");
 
+//Importation de la librairie de date
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+//On charge le module pour la langue
+require("dayjs/locale/fr");
+dayjs.locale("fr"); //On change la langue
+//On importe le module pour la date universelle
+dayjs.extend(utc);
+
+const { check, validationResult } = require("express-validator");
 const serveur = express();
 dotenv.config();
 
@@ -24,32 +34,50 @@ function authentifier(req, res, next) {
 /**
  * Route servant à récuperer tous les films de la base de données
  */
-serveur.get("/films", async (req, res) => {
-    try {
-        const { ordre = "titre", direction = "asc", limite = 100, depart = 0 } = req.query;
+serveur.get(
+    "/films",
+    [
+        check("ordre").escape().trim().optional().isLength({ max: 100 }),
+        check("direction").escape().trim().optional().isIn(["asc", "desc"]),
+    ],
+    async (req, res) => {
+        try {
+            const validationErrors = validationResult(req);
+            if (!validationErrors.isEmpty()) {
+                console.log(validationErrors);
 
-        const films = [];
-        const docRefs = await db
-            .collection("films")
-            .orderBy(ordre, direction)
-            .limit(Number(limite))
-            .offset(Number(depart))
-            .get();
+                return res.status(400).json({ msg: "Données invalides" });
+            }
 
-        docRefs.forEach((doc) => {
-            const film = { id: doc.id, ...doc.data() };
-            films.push(film);
-        });
+            //TEST de date
+            // const date = dayjs("2025-02-17T15:30:03Z");
+            // console.log(date.format("Jour:dddd le DD MM YYYY"));
 
-        if (films.length == 0) {
-            return res.status(404).json({ msg: "Aucun film trouvé" });
+            const { ordre = "titre", direction = "asc", limite = 100, depart = 0 } = req.query;
+
+            const films = [];
+            const docRefs = await db
+                .collection("films")
+                .orderBy(ordre, direction)
+                .limit(Number(limite))
+                .offset(Number(depart))
+                .get();
+
+            docRefs.forEach((doc) => {
+                const film = { id: doc.id, ...doc.data() };
+                films.push(film);
+            });
+
+            if (films.length == 0) {
+                return res.status(404).json({ msg: "Aucun film trouvé" });
+            }
+
+            return res.status(200).json(films);
+        } catch (erreur) {
+            return res.status(500).json({ msg: "Une erreur est survenue" });
         }
-
-        return res.status(200).json(films);
-    } catch (erreur) {
-        return res.status(500).json({ msg: "Une erreur est survenue" });
     }
-});
+);
 
 serveur.get("/films/categories/:categorie", async (req, res) => {
     const { categorie } = req.params;
@@ -68,6 +96,7 @@ serveur.get("/films/categories/:categorie", async (req, res) => {
     }
     return res.status(200).json(films);
 });
+
 serveur.get("/films/realisation/:realisation", async (req, res) => {
     let { realisation } = req.params;
 
@@ -91,24 +120,55 @@ serveur.get("/films/realisation/:realisation", async (req, res) => {
     }
     return res.status(200).json(films);
 });
-serveur.get("/films/:id", async (req, res) => {
-    //Destructuration
-    const { id } = req.params;
 
-    const docRef = await db.collection("films").doc(id).get();
-    const film = { id: docRef.id, ...docRef.data() };
+serveur.get(
+    "/films/:id",
+    [
+        check("id")
+            .escape()
+            .trim()
+            .notEmpty()
+            .isString()
+            .isLength({ min: 22, max: 22 })
+            .matches(/([A-z0-9\-\_]){22}/),
+    ],
+    async (req, res) => {
+        //Destructuration
+        const { id } = req.params;
+        const docRef = await db.collection("films").doc(id).get();
+        const film = { id: docRef.id, ...docRef.data() };
 
-    return res.json(film);
-});
+        return res.json(film);
+    }
+);
 
-serveur.post("/films", async (req, res) => {
-    // const body = req.body;
-    const { body } = req;
+serveur.post(
+    "/films",
+    [
+        check("titre").escape().trim().notEmpty().isLength({ max: 300 }).withMessage("Le titre est obligatoire"),
+        check("genres").escape().trim().exists().isArray().withMessage("Le titre est obligatoire"),
+        check("description").escape().trim().notEmpty().isLength({ max: 2000 }),
+    ],
+    async (req, res) => {
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+            console.log(validationErrors);
 
-    await db.collection("films").add(body);
+            return res.status(400).json({ msg: "Données invalides", validationErrors });
+        }
+        // const body = req.body;
+        const { body } = req;
 
-    return res.status(201).json({ msg: "Le film a été ajouté" });
-});
+        //On récupère la date de la requête
+        let dateModif = dayjs();
+        //On enregistre au format universel et on l'ajoute au corps de la requête
+        body.dateModif = dateModif.utc().format();
+        // console.log(dateModif);
+        await db.collection("films").add(body);
+
+        return res.status(201).json({ msg: "Le film a été ajouté" });
+    }
+);
 
 serveur.post("/films/initialiser", (req, res) => {
     try {
