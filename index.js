@@ -212,8 +212,17 @@ serveur.delete("/films/:id", async (req, res) => {
 
 serveur.post(
     "/utilisateurs/inscription",
-    [check("courriel").escape().trim().notEmpty().isEmail().normalizeEmail()],
+    [
+        check("courriel").escape().trim().notEmpty().isEmail().normalizeEmail(),
+        check("mdp")
+            .escape()
+            .trim()
+            .notEmpty()
+            .isStrongPassword({ minLength: 8, minNumbers: 1, minLowercase: 1, minUppercase: 1, minSymbols: 1 }),
+    ],
     async (req, res) => {
+        //Ajouter try/catch pour capter les autres erreurs possibles
+
         // Valider les infos
         const erreursValidation = validationResult(req);
 
@@ -234,6 +243,7 @@ serveur.post(
         // //Encrypter le mot de passe
         const hash = await bcrypt.hash(mdp, 10);
         const utilisateur = { ...req.body, mdp: hash };
+
         // Ajouter l'utilisateur à la db
         await db.collection("utilisateurs").add(utilisateur);
 
@@ -241,7 +251,38 @@ serveur.post(
     }
 );
 
-serveur.post("/utilisateurs/connexion", () => {});
+serveur.post("/utilisateurs/connexion", async (req, res) => {
+    // Valider les données
+
+    // Récupérer les infos du body avec identifiant unique, mot de passe
+    const { courriel, mdp } = req.body;
+
+    // On vérifie si le user existe
+    // Vérifier si l'utilisateur existe
+    const userRefs = await db.collection("utilisateurs").where("courriel", "==", courriel).get();
+
+    if (userRefs.docs.length == 0) {
+        return res.status(400).json({ msg: "Mauvais courriel" });
+    }
+    // On vérifie le mot de passe
+    const utilisateur = userRefs.docs[0].data();
+
+    const motsPassesPareils = await bcrypt.compare(mdp, utilisateur.mdp);
+
+    if (motsPassesPareils) {
+        // On retourne une authentification
+        delete utilisateur.mdp;
+        const options = {
+            expiresIn: "1d",
+        };
+
+        const jeton = jwt.sign(utilisateur, process.env.JWT_SECRET, options);
+
+        return res.status(200).json({ msg: "Utilisateur connecté", jeton });
+    } else {
+        return res.status(400).json({ msg: "Mot de passe invalide" });
+    }
+});
 
 //Ressources 404
 serveur.use((req, res) => {
