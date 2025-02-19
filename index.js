@@ -3,6 +3,10 @@ const express = require("express");
 const dotenv = require("dotenv");
 const path = require("path");
 const db = require("./config/db");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const { check, validationResult } = require("express-validator");
+const bcrypt = require("bcrypt");
 
 //Importation de la librairie de date
 const dayjs = require("dayjs");
@@ -13,10 +17,10 @@ dayjs.locale("fr"); //On change la langue
 //On importe le module pour la date universelle
 dayjs.extend(utc);
 
-const { check, validationResult } = require("express-validator");
 const serveur = express();
 dotenv.config();
 
+// serveur.use(cors());
 serveur.use(express.json()); //Permet de passer de la donnée json dans le body
 serveur.use(express.urlencoded({ extended: true })); //Permet de passer de la donnée avec formulaire dans le body
 
@@ -196,12 +200,48 @@ serveur.put("/films/:id", async (req, res) => {
     return res.status(201).json({ msg: "Le film a été modifié", film: body });
 });
 
+/**
+ *
+ */
 serveur.delete("/films/:id", async (req, res) => {
     const { id } = req.params;
 
     await db.collection("films").doc(id).delete();
     return res.status(204).json({ msg: "Le film a été supprimé" });
 });
+
+serveur.post(
+    "/utilisateurs/inscription",
+    [check("courriel").escape().trim().notEmpty().isEmail().normalizeEmail()],
+    async (req, res) => {
+        // Valider les infos
+        const erreursValidation = validationResult(req);
+
+        if (!erreursValidation.isEmpty()) {
+            return res.status(400).json({ msg: "Données invalides" });
+        }
+
+        // récupérer les infos du body avec identifiant unique, mot de passe
+        const { courriel, mdp } = req.body;
+
+        // Vérifier si l'utilisateur existe
+        const userRefs = await db.collection("utilisateurs").where("courriel", "==", courriel).get();
+
+        if (userRefs.docs.length > 0) {
+            return res.status(400).json({ msg: "Utilisateur existant" });
+        }
+
+        // //Encrypter le mot de passe
+        const hash = await bcrypt.hash(mdp, 10);
+        const utilisateur = { ...req.body, mdp: hash };
+        // Ajouter l'utilisateur à la db
+        await db.collection("utilisateurs").add(utilisateur);
+
+        return res.status(201).json({ msg: "L'utilisateur à été créé." });
+    }
+);
+
+serveur.post("/utilisateurs/connexion", () => {});
 
 //Ressources 404
 serveur.use((req, res) => {
