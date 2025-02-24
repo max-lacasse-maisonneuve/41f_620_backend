@@ -145,6 +145,57 @@ serveur.get(
         return res.json(film);
     }
 );
+serveur.get("/films/genres/:genre", async (req, res) => {
+    try {
+        const { ordre = "annee", direction = "asc" } = req.query;
+        let { genre } = req.params;
+        genre = genre.split("-");
+
+        genre.forEach((mot, index, genre) => {
+            genre[index] = mot[0].toUpperCase() + mot.slice(1);
+        });
+
+        genre = genre.join(" ");
+
+        const films = [];
+
+        const donnees = await db.collection("films").where("genres", "array-contains", genre).get();
+
+        donnees.forEach((donnee) => {
+            const film = { id: donnee.id, ...donnee.data() };
+            films.push(film);
+        });
+
+        films.sort((a, b) => {
+            //Si la donnée doit être un nombre
+            let estUnNombre = Number(a[ordre]);
+            if (estUnNombre) {
+                if (direction == "asc") {
+                    return a[ordre] - b[ordre];
+                } else {
+                    return b[ordre] - a[ordre];
+                }
+            } else {
+                if (direction == "asc") {
+                    return a[ordre].localeCompare(b[ordre]);
+                } else {
+                    return b[ordre].localeCompare(a[ordre]);
+                }
+            }
+        });
+
+        if (films.length == 0) {
+            return res.status(404).json({ msg: "Aucun livre trouvé pour cette catégorie." });
+        }
+
+        return res.status(200).json(films);
+    } catch (erreur) {
+        return res.status(500).json({
+            message: "Une erreur est survenue. Réessayer dans quelques instants.",
+            erreur,
+        });
+    }
+});
 
 serveur.post(
     "/films",
