@@ -20,7 +20,7 @@ dayjs.extend(utc);
 const serveur = express();
 dotenv.config();
 
-// serveur.use(cors());
+serveur.use(cors());
 serveur.use(express.json()); //Permet de passer de la donnée json dans le body
 serveur.use(express.urlencoded({ extended: true })); //Permet de passer de la donnée avec formulaire dans le body
 
