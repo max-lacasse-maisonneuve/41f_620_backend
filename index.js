@@ -205,23 +205,27 @@ serveur.post(
         check("description").escape().trim().notEmpty().isLength({ max: 2000 }),
     ],
     async (req, res) => {
-        const validationErrors = validationResult(req);
-        if (!validationErrors.isEmpty()) {
-            console.log(validationErrors);
+        try {
+            const validationErrors = validationResult(req);
+            if (!validationErrors.isEmpty()) {
+                console.log(validationErrors);
 
-            return res.status(400).json({ msg: "Données invalides", validationErrors });
+                return res.status(400).json({ msg: "Données invalides", validationErrors });
+            }
+            // const body = req.body;
+            const { body } = req;
+
+            //On récupère la date de la requête
+            let dateModif = dayjs();
+            //On enregistre au format universel et on l'ajoute au corps de la requête
+            body.dateModif = dateModif.utc().format();
+            // console.log(dateModif);
+            await db.collection("films").add(body);
+
+            return res.status(201).json({ msg: "Le film a été ajouté" });
+        } catch (erreur) {
+            return res.status(500).json({ msg: "Une erreur est survenue" });
         }
-        // const body = req.body;
-        const { body } = req;
-
-        //On récupère la date de la requête
-        let dateModif = dayjs();
-        //On enregistre au format universel et on l'ajoute au corps de la requête
-        body.dateModif = dateModif.utc().format();
-        // console.log(dateModif);
-        await db.collection("films").add(body);
-
-        return res.status(201).json({ msg: "Le film a été ajouté" });
     }
 );
 
