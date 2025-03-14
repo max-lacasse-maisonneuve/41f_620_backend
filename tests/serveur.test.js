@@ -1,15 +1,7 @@
 const request = require("supertest");
-let serveur; // Importe ton serveur Express
-let db;
-describe("Tests API Films avec Firestore Emulator", () => {
-    beforeAll(() => {
-        process.env.NODE_ENV = "TEST";
-        console.log(process.env.NODE_ENV);
-        const serveurModule = require("../serveur");
-        serveur = serveurModule.serveur;
-        db = serveurModule.db;
-    });
+const { serveur, db } = require("../serveur");
 
+describe("Tests API Films avec Firestore Emulator", () => {
     beforeEach(async () => {
         const filmsCollection = db.collection("films");
         await Promise.all([

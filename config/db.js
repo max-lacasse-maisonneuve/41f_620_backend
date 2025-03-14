@@ -8,7 +8,10 @@ admin.initializeApp({
 });
 
 const db = getFirestore();
+
 if (process.env.NODE_ENV === "TEST") {
+    console.log("⚠️ mode test");
+
     db.settings({
         host: "localhost:3005",
         ssl: false,
