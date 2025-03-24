@@ -7,6 +7,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { check, validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
+const auth = require("./middlewares/auth");
 
 //Importation de la librairie de date
 const dayjs = require("dayjs");
@@ -203,6 +204,7 @@ serveur.get("/films/genres/:genre", async (req, res) => {
 
 serveur.post(
     "/films",
+    auth,
     [
         check("titre").escape().trim().notEmpty().isLength({ max: 300 }).withMessage("Le titre est obligatoire"),
         check("genres").escape().trim().exists().isArray().withMessage("Le titre est obligatoire"),
@@ -233,7 +235,7 @@ serveur.post(
     }
 );
 
-serveur.post("/films/initialiser", (req, res) => {
+serveur.post("/films/initialiser", auth, (req, res) => {
     try {
         const films = require("./data/filmsDepart");
 
