@@ -4,9 +4,9 @@
     "description": "Une api de films",
     "main": "index.js",
     "scripts": {
-        "resetPorts":"npx kill-port 3005",
-        "startEmulator":"firebase emulators:start --only firestore --project test",
-        "startJest":"set NODE_ENV=TEST&&jest --watch",
+        "resetPorts": "npx kill-port 3005",
+        "startEmulator": "firebase emulators:start --only firestore --project test",
+        "startJest": "set NODE_ENV=TEST&&jest --watch",
         "test": "concurrently \"npm run resetPorts\" \"npm run startEmulator\" \"npm run startJest\"",
         "start": "node index.js",
         "dev": "nodemon index.js"
@@ -31,6 +31,8 @@
         "firebase-admin": "^13.1.0",
         "jest": "^29.7.0",
         "jsonwebtoken": "^9.0.2",
+        "nodemailer": "^6.10.0",
+        "postmark": "^4.0.5",
         "supertest": "^7.0.0"
     },
     "devDependencies": {

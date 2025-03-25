@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const { check, validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const auth = require("./middlewares/auth");
+const nodemailer = require("nodemailer");
 
 //Importation de la librairie de date
 const dayjs = require("dayjs");
@@ -308,7 +309,34 @@ serveur.post(
         // Ajouter l'utilisateur à la db
         await db.collection("utilisateurs").add(utilisateur);
 
-        return res.status(201).json({ msg: "L'utilisateur à été créé." });
+        const transporter = nodemailer.createTransport({
+            host: process.env.MAIL_HOST,
+            port: process.env.MAIL_PORT,
+            auth: {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PWD,
+            },
+            secure: false,
+            requireTLS: true,
+        });
+
+        const mailOptions = {
+            from: "max.lacasse.g@gmail.com",
+            to: "max.lacasse.g@gmail.com",
+            subject: "Hello SMTP Server",
+            text: "Ceci est un test d'email via un serveur SMTP en Node.js",
+        };
+
+        transporter.sendMail(mailOptions, (err, info) => {
+            console.log("test");
+
+            if (err) {
+                console.log(err);
+                return res.status(400).json({ msg: "Une erreur est survenue" });
+            }
+            console.log("Info: ", info);
+            return res.status(201).json({ msg: "L'utilisateur à été créé." });
+        });
     }
 );
 
