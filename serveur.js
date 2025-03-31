@@ -316,12 +316,11 @@ serveur.post(
                 user: process.env.MAIL_USER,
                 pass: process.env.MAIL_PWD,
             },
-            secure: false,
             requireTLS: true,
         });
 
         const mailOptions = {
-            from: "max.lacasse.g@gmail.com",
+            from: "noreply@maximelacassegermain.info",
             to: "max.lacasse.g@gmail.com",
             subject: "Hello SMTP Server",
             text: "Ceci est un test d'email via un serveur SMTP en Node.js",
