@@ -9,6 +9,18 @@ const { check, validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const auth = require("./middlewares/auth");
 const nodemailer = require("nodemailer");
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "public/assets/img");
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    },
+});
+
+const upload = multer({ storage: storage });
 
 //Importation de la librairie de date
 const dayjs = require("dayjs");
@@ -235,6 +247,19 @@ serveur.post(
         }
     }
 );
+
+serveur.post("/films/image", upload.single("image"), (req, res) => {
+    try {
+        const { file } = req;
+        if (!file) {
+            return res.status(400).json({ msg: "Aucun fichier trouvé" });
+        }
+
+        return res.status(201).json({ msg: "Le fichier a été téléchargé" });
+    } catch (erreur) {
+        return res.status(500).json({ msg: "Impossible d'enregistrer l'image" });
+    }
+});
 
 serveur.post("/films/initialiser", auth, (req, res) => {
     try {
