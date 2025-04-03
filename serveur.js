@@ -406,4 +406,11 @@ serveur.use((req, res) => {
     return res.status(404).json({ msg: "Ressource non trouvée" });
 });
 
+process.on("SIGTERM", () => {
+    console.log("Fermeture du serveur...");
+    serveur.close(() => {
+      console.log("Serveur arrêté proprement");
+      process.exit(0);
+    });
+  });
 module.exports = { serveur, db };
